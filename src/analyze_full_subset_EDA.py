@@ -65,4 +65,4 @@ def analyze_businesses_and_users(tar_path):
         print(f" An error occurred: {e}")
 
 # Run the function
-analyze_businesses_and_users('/home/Kdixter/Desktop/School_Stuff/DSM/DSM_A2/data/yelp_dataset.tar')
+analyze_businesses_and_users('yelp_dataset.tar')

@@ -1,4 +1,4 @@
-Analyzing schema metrics and relationship cardinality...
+🔍 Analyzing schema metrics and relationship cardinality...
 
 ------------------------------------------------------------
 1. BASE DOCUMENT SIZES (Average / Max)
@@ -12,18 +12,18 @@ Checkin   : Avg  2294 bytes | Max 451276 bytes | Total  22.5 MB
 ------------------------------------------------------------
 2. RELATIONSHIP CARDINALITY (Business as Parent)
 ------------------------------------------------------------
-Reviews per Business : Avg   0.0 | Max 0
-Tips per Business    : Avg   0.0 | Max 0
+Reviews per Business : Avg  43.5 | Max 2,312
+Tips per Business    : Avg   8.7 | Max 424
 
 ------------------------------------------------------------
 3. THE 16MB EMBEDDING LIMIT TEST (16,777,216 Bytes)
 ------------------------------------------------------------
 If we embed ALL REVIEWS into their parent Business:
- -> The largest business would add 0 bytes (0.00% of 16MB limit).
+ -> The largest business would add 1,747,682 bytes (10.42% of 16MB limit).
  ✅ Safe to embed, but referencing might still be preferred for query performance.
 
 If we embed ALL TIPS into their parent Business:
- -> The largest business would add 0 bytes (0.00% of 16MB limit).
+ -> The largest business would add 79,569 bytes (0.47% of 16MB limit).
  ✅ Safe to embed. Low risk of hitting 16MB limit.
 
-Report successfully saved to schema_metrics_report.txt
+Report successfully saved to /home/Kdixter/Desktop/School_Stuff/DSM/DSM_A2/data/temp_results/schema_metrics_report.txt

@@ -23,10 +23,14 @@ def analyze_json_file(filepath, id_field):
     }
 
 def analyze_relationships():
+    # Define your new directory structure here!
+    DATA_DIR = '/home/Kdixter/Desktop/School_Stuff/DSM/DSM_A2/extracted_data'
+    
     # Open a text file to save our report
-    with open('schema_metrics_report.txt', 'w', encoding='utf-8') as report_file:
+    report_path = '/home/Kdixter/Desktop/School_Stuff/DSM/DSM_A2/data/temp_results/schema_metrics_report.txt'
+    os.makedirs(os.path.dirname(report_path), exist_ok=True)
+    with open(report_path, 'w', encoding='utf-8') as report_file:
         
-        # Custom print function that writes to both the terminal and the text file
         def log(message=""):
             print(message)
             report_file.write(message + "\n")
@@ -38,11 +42,11 @@ def analyze_relationships():
         log("1. BASE DOCUMENT SIZES (Average / Max)")
         log("-" * 60)
         files_to_check = {
-            'Business': ('/home/Kdixter/Desktop/School_Stuff/DSM/DSM_A2/extracted_data/subset_business.json', 'business_id'),
-            'Review': ('/home/Kdixter/Desktop/School_Stuff/DSM/DSM_A2/extracted_data/subset_review.json', 'review_id'),
-            'User': ('/home/Kdixter/Desktop/School_Stuff/DSM/DSM_A2/extracted_data/subset_user.json', 'user_id'),
-            'Tip': ('/home/Kdixter/Desktop/School_Stuff/DSM/DSM_A2/extracted_data/subset_tip.json', 'text'),
-            'Checkin': ('/home/Kdixter/Desktop/School_Stuff/DSM/DSM_A2/extracted_data/subset_checkin.json', 'business_id')
+            'Business': (f'{DATA_DIR}/subset_business.json', 'business_id'),
+            'Review': (f'{DATA_DIR}/subset_review.json', 'review_id'),
+            'User': (f'{DATA_DIR}/subset_user.json', 'user_id'),
+            'Tip': (f'{DATA_DIR}/subset_tip.json', 'text'),
+            'Checkin': (f'{DATA_DIR}/subset_checkin.json', 'business_id')
         }
         
         doc_stats = {}
@@ -61,15 +65,17 @@ def analyze_relationships():
         biz_tips = defaultdict(list)
         
         # Map Reviews to Businesses
-        if os.path.exists('subset_review.json'):
-            with open('subset_review.json', 'r', encoding='utf-8') as f:
+        review_path = '/home/Kdixter/Desktop/School_Stuff/DSM/DSM_A2/extracted_data/subset_review.json'
+        if os.path.exists(review_path):
+            with open(review_path, 'r', encoding='utf-8') as f:
                 for line in f:
                     data = json.loads(line)
                     biz_reviews[data['business_id']].append(len(line.encode('utf-8')))
                     
         # Map Tips to Businesses
-        if os.path.exists('subset_tip.json'):
-            with open('subset_tip.json', 'r', encoding='utf-8') as f:
+        tip_path = '/home/Kdixter/Desktop/School_Stuff/DSM/DSM_A2/extracted_data/subset_tip.json'
+        if os.path.exists(tip_path):
+            with open(tip_path, 'r', encoding='utf-8') as f:
                 for line in f:
                     data = json.loads(line)
                     biz_tips[data['business_id']].append(len(line.encode('utf-8')))
@@ -89,7 +95,6 @@ def analyze_relationships():
         log("3. THE 16MB EMBEDDING LIMIT TEST (16,777,216 Bytes)")
         log("-" * 60)
         
-        # Find the business with the absolute largest review/tip payload
         max_review_payload_bytes = max([sum(r) for r in biz_reviews.values()]) if biz_reviews else 0
         max_tip_payload_bytes = max([sum(t) for t in biz_tips.values()]) if biz_tips else 0
         
@@ -111,7 +116,7 @@ def analyze_relationships():
         else:
             log(" ✅ Safe to embed. Low risk of hitting 16MB limit.")
             
-        log("\nReport successfully saved to schema_metrics_report.txt")
+        log(f"\nReport successfully saved to {report_path}")
 
 # Run it
 analyze_relationships()

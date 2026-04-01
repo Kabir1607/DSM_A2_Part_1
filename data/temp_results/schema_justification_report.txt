@@ -1,0 +1,72 @@
+=============================================================================
+MONGODB SCHEMA DESIGN & JUSTIFICATIONS
+DSM Assignment 2 - Part 1
+=============================================================================
+
+OVERVIEW
+The original dataset consists of five core JSON files: business, review, user, tip, and checkin. 
+To optimize for read/write performance and adhere to MongoDB's 16MB document limit, the schema 
+has been denormalized from five standalone files into three optimized collections: `businesses`, 
+`users`, and `reviews`. 
+
+Empirical analysis on the Indiana (IN) subset was conducted to drive the embedding versus 
+referencing decisions.
+
+-----------------------------------------------------------------------------
+COLLECTION 1: `businesses`
+-----------------------------------------------------------------------------
+Structure:
+- Core Fields: business_id (String), name (String), address (String), city (String), 
+  state (String), stars (Float), review_count (Int), categories (Array of Strings), 
+  attributes (Object).
+- EMBEDDED `tips`: Array of objects [{"text": String, "date": String, "user_id": String}]
+- EMBEDDED `checkins`: Array of strings ["YYYY-MM-DD HH:MM:SS", ...]
+
+Justification (Embedding):
+1. Tips (Read/Write Trade-off): Empirical analysis shows the maximum tips for a single business 
+   is 424, occupying roughly 79 KB (0.47% of the 16MB limit). Because this is a highly bounded 
+   "One-to-Few" relationship and tips are rarely updated after creation, embedding them avoids 
+   costly $lookup operations. This provides blazing-fast read performance when querying a business profile.
+2. Check-ins (Query Optimization): The maximum check-in payload is ~451 KB. Embedding check-in 
+   timestamps directly into the business document significantly optimizes analytical queries. 
+   Specifically, Task 3.7 requires analyzing the connection between check-in activity and star ratings. 
+   By embedding check-ins next to the `stars` field, the aggregation pipeline can calculate this 
+   correlation without requiring a multi-collection join.
+
+-----------------------------------------------------------------------------
+COLLECTION 2: `reviews`
+-----------------------------------------------------------------------------
+Structure:
+- Core Fields: review_id (String), stars (Int), date (String), text (String), useful (Int), 
+  funny (Int), cool (Int).
+- REFERENCED `business_id`: String (Foreign Key linking to `businesses`)
+- REFERENCED `user_id`: String (Foreign Key linking to `users`)
+
+Justification (Referencing):
+1. The 16MB Limit & Write Performance: The subset analysis reveals businesses can have thousands 
+   of reviews (max 2,312), creating payloads upwards of 1.7 MB. While currently under 16MB, 
+   reviews represent an infinitely growing, unbounded array. Appending new reviews to an embedded 
+   array forces MongoDB to constantly rewrite a massive document on disk, severely degrading write 
+   performance. Referencing ensures O(1) write complexity for new reviews.
+2. Independent Querying: Tasks 3.5 and 3.6 require analyzing review behavior based on user tenure 
+   and elite status. If reviews were embedded inside business documents, the database would have 
+   to scan every business document in the database just to aggregate a single user's activity. 
+   Keeping `reviews` as a standalone collection allows for highly efficient user-centric aggregation.
+
+-----------------------------------------------------------------------------
+COLLECTION 3: `users`
+-----------------------------------------------------------------------------
+Structure:
+- Core Fields: user_id (String), name (String), review_count (Int), yelping_since (String), 
+  average_stars (Float), fans (Int), compliment metrics (Ints).
+- EMBEDDED `friends`: Array of Strings (user_ids)
+- EMBEDDED `elite`: Array of Ints (Years)
+
+Justification (Embedding & Referencing):
+1. The `users` collection remains a standalone entity, referenced by the `reviews` collection 
+   to maintain a single source of truth for user metadata. 
+2. The `friends` and `elite` fields are embedded as arrays of primitives. These represent a 
+   user's inherent metadata and are frequently read together with the user profile. Embedding 
+   them maintains data locality and prevents the need for separate "Friends" or "EliteStatus" 
+   mapping tables, which would be an anti-pattern in document database design.
+=============================================================================
