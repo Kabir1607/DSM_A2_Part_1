@@ -104,27 +104,27 @@ RETURN p LIMIT 50"""
 
 
 def run_neo4j_queries():
-    print(f"🚀 Connecting to Neo4j at {NEO4J_URI}...")
+    print(f" Connecting to Neo4j at {NEO4J_URI}...")
     driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
     
     outputs = {}
     
     with driver.session() as session:
         for q_id, q_data in QUERIES.items():
-            print(f"⏳ Running Task {q_id}: {q_data['title']}...")
+            print(f" Running Task {q_id}: {q_data['title']}...")
             try:
                 result = session.run(q_data['query'])
                 # Convert the Record objects into standard python dicts for JSON
                 records = [dict(record) for record in result]
                 outputs[q_id] = json.dumps(records, indent=2)
-                print(f"   ✅ Done.")
+                print(f"    Done.")
             except Exception as e:
                 outputs[q_id] = f"ERROR: {e}"
-                print(f"   ❌ Error: {e}")
+                print(f"    Error: {e}")
                 
     driver.close()
     
-    print("\n✅ Generating Output Documents...")
+    print("\n Generating Output Documents...")
     
     # 1. Constructing the Analytical Document
     analytical_document = f"""=============================================================================
@@ -233,12 +233,12 @@ VISUAL 4.5: MongoDB Comparison - Review Category Trace
     try:
         with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
             f.write(analytical_document)
-        print(f"🎉 Analytical data written successfully to {{OUTPUT_FILE}}!")
+        print(f" Analytical data written successfully to {{OUTPUT_FILE}}!")
         
         GRAPH_OUTPUT_FILE = "/home/Kdixter/Desktop/School_Stuff/DSM/DSM_A2/queries/graph_generation.txt"
         with open(GRAPH_OUTPUT_FILE, 'w', encoding='utf-8') as f:
             f.write(visual_document)
-        print(f"🖼️ Visual Graph queries written to {{GRAPH_OUTPUT_FILE}}!\n")
+        print(f" Visual Graph queries written to {{GRAPH_OUTPUT_FILE}}!\n")
     except Exception as e:
         print(f"File writing failed! {{e}}")
 

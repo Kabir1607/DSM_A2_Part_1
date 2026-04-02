@@ -105,16 +105,16 @@ def analyze_relationships():
         log(f"If we embed ALL REVIEWS into their parent Business:")
         log(f" -> The largest business would add {max_review_payload_bytes:,} bytes ({review_pct:.2f}% of 16MB limit).")
         if review_pct > 80:
-            log(" ⚠️ DANGER: Highly unbounded array. Referencing is strongly recommended.")
+            log("  DANGER: Highly unbounded array. Referencing is strongly recommended.")
         else:
-            log(" ✅ Safe to embed, but referencing might still be preferred for query performance.")
+            log("  Safe to embed, but referencing might still be preferred for query performance.")
             
         log(f"\nIf we embed ALL TIPS into their parent Business:")
         log(f" -> The largest business would add {max_tip_payload_bytes:,} bytes ({tip_pct:.2f}% of 16MB limit).")
         if tip_pct > 80:
-            log(" ⚠️ DANGER: Unbounded array.")
+            log("  DANGER: Unbounded array.")
         else:
-            log(" ✅ Safe to embed. Low risk of hitting 16MB limit.")
+            log("  Safe to embed. Low risk of hitting 16MB limit.")
             
         log(f"\nReport successfully saved to {report_path}")
 

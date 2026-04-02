@@ -43,14 +43,14 @@ def create_samples_from_tar(tar_path, num_entries=1):
                                 
                         outfile.write("]\n") 
                         
-                    print(f" ✅ Saved to {clean_name}")
+                    print(f"  Saved to {clean_name}")
                 except KeyError:
-                    print(f"⚠️ Could not find {target} in the archive.")
+                    print(f" Could not find {target} in the archive.")
                     
         print("\nAll done! You can now open the sample files in your code editor.")
                 
     except Exception as e:
-        print(f"❌ An error occurred: {e}")
+        print(f" An error occurred: {e}")
 
 # Run it
 create_samples_from_tar('yelp_photos.tar', 1)

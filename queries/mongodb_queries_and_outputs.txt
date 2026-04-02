@@ -3,21 +3,26 @@ MONGODB AGGREGATION QUERIES AND OUTPUTS
 DSM Assignment 2 - Task 3
 =============================================================================
 
-NOTE: The following aggregation pipelines utilize the exact indexes specified in `indexing_strategy.txt` to execute efficiently.
-
 -----------------------------------------------------------------------------
 QUERY 3.1: Safest/Least-Safe Cities and Categories (by Review Volume & Stars)
 -----------------------------------------------------------------------------
 ```javascript
+// Safest Cities
 db.businesses.aggregate([
   { $match: { review_count: { $gte: 50 } } },
-  { $group: {
-      _id: "$city",
-      avg_stars: { $avg: "$stars" },
-      total_reviews: { $sum: "$review_count" },
-      business_count: { $sum: 1 }
-  }},
+  { $group: { _id: "$city", avg_stars: { $avg: "$stars" }, total_reviews: { $sum: "$review_count" }, business_count: { $sum: 1 } } },
   { $match: { business_count: { $gte: 10 } } },
+  { $sort: { avg_stars: -1, total_reviews: -1 } },
+  { $limit: 5 }
+])
+
+// Safest Categories
+db.businesses.aggregate([
+  { $addFields: { cat_array: { $split: [{ $ifNull: ["$categories", ""] }, ", "] } } },
+  { $unwind: "$cat_array" },
+  { $match: { review_count: { $gte: 50 } } },
+  { $group: { _id: "$cat_array", avg_stars: { $avg: "$stars" }, total_reviews: { $sum: "$review_count" }, business_count: { $sum: 1 } } },
+  { $match: { business_count: { $gte: 20 } } },
   { $sort: { avg_stars: -1, total_reviews: -1 } },
   { $limit: 5 }
 ])
@@ -91,77 +96,236 @@ TOP 5 LEAST SAFE CITIES:
   }
 ]
 
---- Query executed in 0.01 seconds ---
+TOP 5 SAFEST CATEGORIES:
+[
+  {
+    "_id": "Vegan",
+    "avg_stars": 4.369565217391305,
+    "total_reviews": 4168,
+    "business_count": 23
+  },
+  {
+    "_id": "Hair Salons",
+    "avg_stars": 4.28,
+    "total_reviews": 1987,
+    "business_count": 25
+  },
+  {
+    "_id": "Thai",
+    "avg_stars": 4.191489361702128,
+    "total_reviews": 8748,
+    "business_count": 47
+  },
+  {
+    "_id": "Local Flavor",
+    "avg_stars": 4.178571428571429,
+    "total_reviews": 8831,
+    "business_count": 42
+  },
+  {
+    "_id": "Specialty Food",
+    "avg_stars": 4.168478260869565,
+    "total_reviews": 13273,
+    "business_count": 92
+  }
+]
+
+TOP 5 LEAST SAFE CATEGORIES:
+[
+  {
+    "_id": "Car Dealers",
+    "avg_stars": 2.838709677419355,
+    "total_reviews": 2332,
+    "business_count": 31
+  },
+  {
+    "_id": "Auto Parts & Supplies",
+    "avg_stars": 3.0238095238095237,
+    "total_reviews": 1452,
+    "business_count": 21
+  },
+  {
+    "_id": "Auto Repair",
+    "avg_stars": 3.03125,
+    "total_reviews": 2311,
+    "business_count": 32
+  },
+  {
+    "_id": "Automotive",
+    "avg_stars": 3.044642857142857,
+    "total_reviews": 4410,
+    "business_count": 56
+  },
+  {
+    "_id": "Fast Food",
+    "avg_stars": 3.118811881188119,
+    "total_reviews": 9865,
+    "business_count": 101
+  }
+]
+
+--- Query executed in 0.15 seconds ---
 
 -----------------------------------------------------------------------------
-QUERY 3.2: Trend Analysis of Star Ratings Over Time
+QUERY 3.2: Trend Analysis of Star Ratings Over Time (by City and Category)
 -----------------------------------------------------------------------------
 ```javascript
 db.reviews.aggregate([
-  { $lookup: {
-      from: "businesses",
-      localField: "business_id",
-      foreignField: "business_id",
-      as: "biz"
-  }},
+  { $lookup: { from: "businesses", localField: "business_id", foreignField: "business_id", as: "biz" } },
   { $unwind: "$biz" },
-  { $unwind: "$biz.categories" },
+  { $addFields: { cat_array: { $split: [{ $ifNull: ["$biz.categories", ""] }, ", "] } } },
+  { $unwind: "$cat_array" },
   { $addFields: { year: { $substr: ["$date", 0, 4] } } },
   { $group: {
-      _id: { category: "$biz.categories", year: "$year" },
+      _id: { city: "$biz.city", category: "$cat_array", year: "$year" },
       avg_stars_year: { $avg: "$stars" },
       review_count: { $sum: 1 }
   }},
-  { $match: { review_count: { $gte: 500 } } },
-  { $sort: { "_id.category": 1, "_id.year": 1 } },
-  { $limit: 20 }
+  { $match: { review_count: { $gte: 50 } } },
+  { $sort: { "_id.city": 1, "_id.category": 1, "_id.year": 1 } },
+  { $limit: 15 }
 ])
 ```
 >>> OUTPUT 3.2:
 [
   {
     "_id": {
-      "category": "Mexican, Restaurants",
+      "city": "Avon",
+      "category": "American (New)",
+      "year": "2013"
+    },
+    "avg_stars_year": 3.08,
+    "review_count": 50
+  },
+  {
+    "_id": {
+      "city": "Avon",
+      "category": "American (New)",
+      "year": "2014"
+    },
+    "avg_stars_year": 3.5316455696202533,
+    "review_count": 79
+  },
+  {
+    "_id": {
+      "city": "Avon",
+      "category": "American (New)",
+      "year": "2015"
+    },
+    "avg_stars_year": 3.442528735632184,
+    "review_count": 174
+  },
+  {
+    "_id": {
+      "city": "Avon",
+      "category": "American (New)",
+      "year": "2016"
+    },
+    "avg_stars_year": 3.4215686274509802,
+    "review_count": 204
+  },
+  {
+    "_id": {
+      "city": "Avon",
+      "category": "American (New)",
+      "year": "2017"
+    },
+    "avg_stars_year": 3.227722772277228,
+    "review_count": 202
+  },
+  {
+    "_id": {
+      "city": "Avon",
+      "category": "American (New)",
       "year": "2018"
     },
-    "avg_stars_year": 3.8558875219683655,
-    "review_count": 569
+    "avg_stars_year": 3.4215686274509802,
+    "review_count": 204
   },
   {
     "_id": {
-      "category": "Mexican, Restaurants",
+      "city": "Avon",
+      "category": "American (New)",
       "year": "2019"
     },
-    "avg_stars_year": 3.7901960784313724,
-    "review_count": 510
+    "avg_stars_year": 3.403669724770642,
+    "review_count": 218
   },
   {
     "_id": {
-      "category": "Nightlife, Comfort Food, Restaurants, American (New), American (Traditional), Soul Food, Southern, Bars, Beer Bar, Sandwiches",
-      "year": "2019"
+      "city": "Avon",
+      "category": "American (New)",
+      "year": "2020"
     },
-    "avg_stars_year": 4.523255813953488,
-    "review_count": 516
+    "avg_stars_year": 3.725663716814159,
+    "review_count": 113
   },
   {
     "_id": {
-      "category": "Restaurants, Mexican",
-      "year": "2018"
+      "city": "Avon",
+      "category": "American (New)",
+      "year": "2021"
     },
-    "avg_stars_year": 3.9594771241830067,
-    "review_count": 765
+    "avg_stars_year": 3.871559633027523,
+    "review_count": 109
   },
   {
     "_id": {
-      "category": "Restaurants, Mexican",
-      "year": "2019"
+      "city": "Avon",
+      "category": "American (Traditional)",
+      "year": "2012"
     },
-    "avg_stars_year": 3.9378109452736316,
-    "review_count": 804
+    "avg_stars_year": 3.245614035087719,
+    "review_count": 57
+  },
+  {
+    "_id": {
+      "city": "Avon",
+      "category": "American (Traditional)",
+      "year": "2013"
+    },
+    "avg_stars_year": 3.202127659574468,
+    "review_count": 94
+  },
+  {
+    "_id": {
+      "city": "Avon",
+      "category": "American (Traditional)",
+      "year": "2014"
+    },
+    "avg_stars_year": 3.101010101010101,
+    "review_count": 99
+  },
+  {
+    "_id": {
+      "city": "Avon",
+      "category": "American (Traditional)",
+      "year": "2015"
+    },
+    "avg_stars_year": 3.248826291079812,
+    "review_count": 213
+  },
+  {
+    "_id": {
+      "city": "Avon",
+      "category": "American (Traditional)",
+      "year": "2016"
+    },
+    "avg_stars_year": 3.2875536480686693,
+    "review_count": 233
+  },
+  {
+    "_id": {
+      "city": "Avon",
+      "category": "American (Traditional)",
+      "year": "2017"
+    },
+    "avg_stars_year": 3.1263736263736264,
+    "review_count": 182
   }
 ]
 
---- Query executed in 13.95 seconds ---
+--- Query executed in 15.62 seconds ---
 
 -----------------------------------------------------------------------------
 QUERY 3.3: Correlation Between Review Volume and Average Star Rating
@@ -210,24 +374,20 @@ db.businesses.aggregate([
   }
 ]
 
---- Query executed in 0.02 seconds ---
+--- Query executed in 0.01 seconds ---
 
 -----------------------------------------------------------------------------
 QUERY 3.4: Review Behavior By Category
 -----------------------------------------------------------------------------
 ```javascript
 db.reviews.aggregate([
-  { $lookup: {
-      from: "businesses",
-      localField: "business_id",
-      foreignField: "business_id",
-      as: "biz"
-  }},
+  { $lookup: { from: "businesses", localField: "business_id", foreignField: "business_id", as: "biz" } },
   { $unwind: "$biz" },
-  { $unwind: "$biz.categories" },
+  { $addFields: { cat_array: { $split: [{ $ifNull: ["$biz.categories", ""] }, ", "] } } },
+  { $unwind: "$cat_array" },
   { $addFields: { review_length: { $strLenCP: { $ifNull: ["$text", ""] } } } },
   { $group: {
-      _id: "$biz.categories",
+      _id: "$cat_array",
       avg_rating: { $avg: "$stars" },
       avg_length: { $avg: "$review_length" },
       avg_useful_votes: { $avg: "$useful" },
@@ -241,98 +401,91 @@ db.reviews.aggregate([
 >>> OUTPUT 3.4:
 [
   {
-    "_id": "Event Planning & Services, Hotels & Travel, Hotels",
-    "avg_rating": 2.740740740740741,
-    "avg_length": 744.8167141500475,
-    "avg_useful_votes": 0.8537511870845205,
-    "total_reviews": 1053
+    "_id": "Apartments",
+    "avg_rating": 2.5070237050043898,
+    "avg_length": 938.9043020193152,
+    "avg_useful_votes": 2.4266900790166814,
+    "total_reviews": 2278
   },
   {
-    "_id": "Restaurants, American (New), Venues & Event Spaces, Event Planning & Services",
-    "avg_rating": 4.415686274509804,
-    "avg_length": 685.5107843137255,
-    "avg_useful_votes": 1.138235294117647,
-    "total_reviews": 1020
+    "_id": "Movers",
+    "avg_rating": 2.755571531272466,
+    "avg_length": 851.6987778576564,
+    "avg_useful_votes": 1.8619698058950396,
+    "total_reviews": 1391
   },
   {
-    "_id": "Restaurants, Bakeries, Desserts, Patisserie/Cake Shop, American (Traditional), Cafes, Coffee & Tea, Cupcakes, French, Sandwiches, Food, American (New), Breakfast & Brunch",
-    "avg_rating": 4.03515625,
-    "avg_length": 672.046875,
-    "avg_useful_votes": 1.046875,
-    "total_reviews": 1024
+    "_id": "Real Estate",
+    "avg_rating": 2.812649481796439,
+    "avg_length": 847.0674993356365,
+    "avg_useful_votes": 2.4427318628753656,
+    "total_reviews": 3763
   },
   {
-    "_id": "Italian, Restaurants",
-    "avg_rating": 3.9428412874583794,
-    "avg_length": 655.6281908990011,
-    "avg_useful_votes": 0.8501664816870145,
-    "total_reviews": 1802
+    "_id": "Bridal",
+    "avg_rating": 3.8877338877338876,
+    "avg_length": 823.1351351351351,
+    "avg_useful_votes": 1.2591822591822592,
+    "total_reviews": 1443
   },
   {
-    "_id": "Beer, Wine & Spirits, Cafes, Coffee & Tea, Restaurants, Food, Breakfast & Brunch, American (New)",
-    "avg_rating": 4.158339197748065,
-    "avg_length": 643.7044334975369,
-    "avg_useful_votes": 1.2723434201266715,
-    "total_reviews": 1421
+    "_id": "Mattresses",
+    "avg_rating": 2.8247914183551845,
+    "avg_length": 811.5566150178785,
+    "avg_useful_votes": 1.3557806912991657,
+    "total_reviews": 1678
   },
   {
-    "_id": "Steakhouses, Seafood, Restaurants, Bars, Cocktail Bars, Nightlife",
-    "avg_rating": 4.155363155363156,
-    "avg_length": 643.2967772967773,
-    "avg_useful_votes": 0.7498797498797499,
-    "total_reviews": 2079
+    "_id": "Car Dealers",
+    "avg_rating": 2.9621505376344084,
+    "avg_length": 784.4260215053763,
+    "avg_useful_votes": 1.6156989247311828,
+    "total_reviews": 4650
   },
   {
-    "_id": "Steakhouses, Restaurants",
-    "avg_rating": 3.4460052677787534,
-    "avg_length": 636.6681299385426,
-    "avg_useful_votes": 0.8050921861281826,
-    "total_reviews": 1139
+    "_id": "Festivals",
+    "avg_rating": 4.296605453533667,
+    "avg_length": 777.8319421257652,
+    "avg_useful_votes": 1.6321647189760713,
+    "total_reviews": 1797
   },
   {
-    "_id": "Restaurants, American (Traditional)",
-    "avg_rating": 3.91600790513834,
-    "avg_length": 622.5276679841897,
-    "avg_useful_votes": 0.958498023715415,
-    "total_reviews": 1012
+    "_id": "Veterinarians",
+    "avg_rating": 3.9754064193413923,
+    "avg_length": 759.7157148812005,
+    "avg_useful_votes": 1.7582325969153814,
+    "total_reviews": 2399
   },
   {
-    "_id": "Food, American (New), Nightlife, Bars, Empanadas, Latin American, Restaurants, Mexican, Tacos",
-    "avg_rating": 4.537313432835821,
-    "avg_length": 611.4059701492537,
-    "avg_useful_votes": 0.7791044776119403,
-    "total_reviews": 1005
+    "_id": "Heating & Air Conditioning/HVAC",
+    "avg_rating": 2.763873775843308,
+    "avg_length": 757.7453754080523,
+    "avg_useful_votes": 2.2568008705114253,
+    "total_reviews": 1838
   },
   {
-    "_id": "Barbeque, Restaurants",
-    "avg_rating": 3.77336860670194,
-    "avg_length": 576.2619047619048,
-    "avg_useful_votes": 0.8994708994708994,
-    "total_reviews": 1134
+    "_id": "Financial Services",
+    "avg_rating": 2.1829105473965287,
+    "avg_length": 733.8771695594126,
+    "avg_useful_votes": 4.002670226969292,
+    "total_reviews": 1498
   }
 ]
 
---- Query executed in 13.97 seconds ---
+--- Query executed in 15.46 seconds ---
 
 -----------------------------------------------------------------------------
 QUERY 3.5: Impact of User Tenure on Review Behavior
 -----------------------------------------------------------------------------
 ```javascript
 db.users.aggregate([
-  { $addFields: {
-      join_year: { $toInt: { $substr: ["$yelping_since", 0, 4] } },
-      dataset_end_year: 2022
-  }},
+  { $addFields: { join_year: { $toInt: { $substr: ["$yelping_since", 0, 4] } }, dataset_end_year: 2022 } },
   { $addFields: { tenure_years: { $subtract: ["$dataset_end_year", "$join_year"] } } },
   { $bucket: {
       groupBy: "$tenure_years",
       boundaries: [0, 2, 5, 10, 15],
       default: "15+",
-      output: {
-          avg_stars_given: { $avg: "$average_stars" },
-          avg_useful_given: { $avg: "$useful" },
-          user_count: { $sum: 1 }
-      }
+      output: { avg_stars_given: { $avg: "$average_stars" }, avg_useful_given: { $avg: "$useful" }, user_count: { $sum: 1 } }
   }}
 ])
 ```
@@ -370,24 +523,16 @@ db.users.aggregate([
   }
 ]
 
---- Query executed in 0.18 seconds ---
+--- Query executed in 0.37 seconds ---
 
 -----------------------------------------------------------------------------
 QUERY 3.6: Elite vs. Non-Elite Review Behavior
 -----------------------------------------------------------------------------
 ```javascript
 db.reviews.aggregate([
-  { $lookup: {
-      from: "users",
-      localField: "user_id",
-      foreignField: "user_id",
-      as: "author"
-  }},
+  { $lookup: { from: "users", localField: "user_id", foreignField: "user_id", as: "author" } },
   { $unwind: "$author" },
-  { $addFields: { 
-      is_elite: { $cond: [ { $in: ["$author.elite", [null, "", "None", []]] }, false, true ] },
-      review_length: { $strLenCP: { $ifNull: ["$text", ""] } }
-  }},
+  { $addFields: { is_elite: { $cond: [ { $in: ["$author.elite", [null, "", "None", []]] }, false, true ] }, review_length: { $strLenCP: { $ifNull: ["$text", ""] } } } },
   { $group: {
       _id: "$is_elite",
       mean_star_rating: { $avg: "$stars" },
@@ -415,34 +560,24 @@ db.reviews.aggregate([
   }
 ]
 
---- Query executed in 12.92 seconds ---
+--- Query executed in 12.53 seconds ---
 
 -----------------------------------------------------------------------------
 QUERY 3.7: Connection Between Check-in Activity and Star Ratings
 -----------------------------------------------------------------------------
 ```javascript
-// Part A
-db.businesses.aggregate([
-  { $addFields: { checkin_count: { $size: { $ifNull: ["$checkins", []] } } } },
-  { $bucket: {
-      groupBy: "$checkin_count",
-      boundaries: [0, 20, 100, 500, 2000],
-      default: "2000+",
-      output: { avg_rating: { $avg: "$stars" }, business_count: { $sum: 1 } }
-  }}
-])
-
 // Part B
 db.businesses.aggregate([
   { $addFields: { checkin_count: { $size: { $ifNull: ["$checkins", []] } } } },
-  { $unwind: "$categories" },
+  { $addFields: { cat_array: { $split: [{ $ifNull: ["$categories", ""] }, ", "] } } },
+  { $unwind: "$cat_array" },
   { $group: {
-      _id: "$categories",
+      _id: "$cat_array",
       avg_checkins: { $avg: "$checkin_count" },
       avg_rating: { $avg: "$stars" },
       count: { $sum: 1 }
   }},
-  { $match: { count: { $gte: 200 } } },
+  { $match: { count: { $gte: 50 } } },
   { $sort: { avg_checkins: -1 } },
   { $limit: 10 }
 ])
@@ -478,7 +613,68 @@ PART A: BUCKETED BY CHECK-IN VOLUME
 ]
 
 PART B: TOP 10 CATEGORIES BY CHECK-INS
-[]
+[
+  {
+    "_id": "Breweries",
+    "avg_checkins": 448.88034188034186,
+    "avg_rating": 4.064102564102564,
+    "count": 117
+  },
+  {
+    "_id": "Beer Bar",
+    "avg_checkins": 442.0243902439024,
+    "avg_rating": 3.9634146341463414,
+    "count": 82
+  },
+  {
+    "_id": "Car Rental",
+    "avg_checkins": 403.0357142857143,
+    "avg_rating": 2.892857142857143,
+    "count": 56
+  },
+  {
+    "_id": "Gluten-Free",
+    "avg_checkins": 392.2881355932203,
+    "avg_rating": 3.940677966101695,
+    "count": 59
+  },
+  {
+    "_id": "Transportation",
+    "avg_checkins": 387.2903225806452,
+    "avg_rating": 3.153225806451613,
+    "count": 62
+  },
+  {
+    "_id": "Cocktail Bars",
+    "avg_checkins": 373.46902654867256,
+    "avg_rating": 4.035398230088496,
+    "count": 113
+  },
+  {
+    "_id": "Pubs",
+    "avg_checkins": 345.34285714285716,
+    "avg_rating": 3.662857142857143,
+    "count": 175
+  },
+  {
+    "_id": "Wine Bars",
+    "avg_checkins": 331.30232558139534,
+    "avg_rating": 4.040697674418604,
+    "count": 86
+  },
+  {
+    "_id": "Beer",
+    "avg_checkins": 320.765625,
+    "avg_rating": 3.9036458333333335,
+    "count": 192
+  },
+  {
+    "_id": "Wine & Spirits",
+    "avg_checkins": 320.765625,
+    "avg_rating": 3.9036458333333335,
+    "count": 192
+  }
+]
 
---- Query executed in 0.09 seconds ---
+--- Query executed in 0.10 seconds ---
 =============================================================================

@@ -96,7 +96,7 @@ def extract_subset(tar_path, target_state="IN"):
         print("\n Extraction Complete! All subset files are ready for database import.")
 
     except Exception as e:
-        print(f"❌ An error occurred: {e}")
+        print(f" An error occurred: {e}")
 
 # Run the extraction
 extract_subset('/home/Kdixter/Desktop/School_Stuff/DSM/DSM_A2/data/yelp_dataset.tar')
