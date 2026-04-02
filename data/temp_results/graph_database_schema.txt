@@ -1,0 +1,57 @@
+Graph Database Schema and Justification
+=======================================
+
+Based on the schema_metrics_report.txt and the specific analytical queries required in the assignment, here is the proposed, highly-optimized Graph Database Schema. It is designed to leverage Neo4j's "index-free adjacency" while avoiding performance bottlenecks caused by heavy data sizes.
+
+1. The Graph Schema Structure
+-----------------------------
+
+Nodes & Key Properties:
+* User: user_id (String/ID), name (String), review_count (Integer), average_stars (Float).
+* Review: review_id (String/ID), stars (Integer), date (String/Date). 
+* Business: business_id (String/ID), name (String), city (String), state (String), stars (Float), review_count (Integer).
+* Category: name (String/ID).
+
+Relationships (Edges):
+* (User)-[:FRIENDS_WITH]->(User): Undirected (or bi-directed) social connections.
+* (User)-[:WROTE]->(Review): Connects the author to the evaluation.
+* (Review)-[:REVIEWS]->(Business): Connects the evaluation to the entity.
+* (Business)-[:IN_CATEGORY]->(Category): Connects the business to its classifications.
+
+Mermaid Diagram Structure:
+(U1:User)-[:FRIENDS_WITH]->(U2:User)
+(U1:User)-[:WROTE]->(R1:Review)
+(R1:Review)-[:REVIEWS]->(B1:Business)
+(B1:Business)-[:IN_CATEGORY]->(C1:Category)
+
+
+2. Justification Based on Schema Metrics
+----------------------------------------
+
+The schema_metrics_report.txt provides two massive clues on why we MUST design the graph this way:
+
+A. Why `Review` is a Node, not an Edge:
+A common mistake in Neo4j is creating a direct relationship like `(User)-[:REVIEWED {stars: 5, text: "..."}]->(Business)`. However, the metrics report shows that the maximum `Review` document size is 5,291 bytes. Storing over 5KB of text and metadata on a relationship edge is a severe anti-pattern in Neo4j. Edges should be lightweight for fast traversal. Furthermore, the report shows a single business can have up to 2,312 reviews. If you place heavy text data on 2,300 edges connected to a single node, traversing that business becomes incredibly slow. By making `Review` its own distinct node, the graph remains highly performant.
+
+B. Why we pre-calculate properties (The User Node):
+The metrics report notes that the maximum `User` document size is a staggering 225,890 bytes (~225KB). This indicates massive arrays of friends and nested data. By extracting properties like `review_count` and `average_stars` and storing them directly on the `User` node, we prevent Neo4j from having to scan massive amounts of sub-graph data just to answer simple queries.
+
+
+3. Optimization for Assignment Queries
+--------------------------------------
+
+This specific structure is tailor-made to dominate the 4 Cypher queries outlined in the assignment:
+
+* Query 1: Top 10 users with the most friends.
+  Optimization: Because we stored `review_count` and `average_stars` directly on the `User` node, this query only has to count the `[:FRIENDS_WITH]` edges and return the pre-existing properties. It completely bypasses the need to traverse the `[:WROTE]` paths to calculate the mean star rating, reducing query time from seconds to milliseconds.
+
+* Query 2: Top 3 businesses by state (>= 50 reviews).
+  Optimization: We placed `state` and `review_count` directly on the `Business` node. Neo4j can instantly filter businesses by state and `review_count >= 50` without having to follow the `[:REVIEWS]` relationships to physically count the incoming reviews.
+
+* Query 3: Users who reviewed businesses in the most distinct cities.
+  Optimization: By having `city` on the `Business` node and `stars` on the `Review` node, the path `(User)-[:WROTE]->(Review)-[:REVIEWS]->(Business)` perfectly supports calculating the mean rating grouped by `Business.city`.
+
+* Query 4: Category mean vs. Overall mean.
+  Optimization: By extracting `Category` into its own node instead of an array property, Neo4j can instantly use Index-Free Adjacency. It starts at the specific `Category` node (e.g., "Mexican") and zips backward through `[:IN_CATEGORY] -> (Business) <- [:REVIEWS] <- (Review) <- [:WROTE] - (User)`. To compare against the user's overall average, we simply pull the `User.average_stars` property we already defined, requiring no additional graph traversal.
+
+This structure strikes the perfect balance between graph purity and read-time optimization.
