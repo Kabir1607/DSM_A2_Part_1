@@ -1,0 +1,12 @@
+This code base and then later report was developed 
+inside of Google Antigravity using Gemini 3 Pro 
+model. 
+
+All instructions about what to do and how to proceed
+were structly my own. 
+
+All it was used for was implementation. 
+
+For the diagram generation, mermaid.live was used. 
+It is a platform where you can give code to 
+visualize database schemas and diagrams. 
