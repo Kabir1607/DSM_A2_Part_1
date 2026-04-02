@@ -1,0 +1,57 @@
+=============================================================================
+NEO4J CYPHER GRAPH VISUALIZATION QUERIES
+Paste these exactly into your Neo4j Browser (http://localhost:7474) to screenshot for your report.
+=============================================================================
+
+-----------------------------------------------------------------------------
+VISUAL 4.1: Friendships of the Top 3 Users
+-----------------------------------------------------------------------------
+```cypher
+MATCH (u:User)-[r:FRIENDS_WITH]-(f:User)
+WITH u, count(f) AS friend_count
+ORDER BY friend_count DESC
+LIMIT 3
+MATCH (u)-[rel:FRIENDS_WITH]-(friends)
+RETURN u, rel, friends LIMIT 100
+```
+
+-----------------------------------------------------------------------------
+VISUAL 4.2: Top Businesses Path
+-----------------------------------------------------------------------------
+```cypher
+MATCH p=(b:Business)-[:IN_CATEGORY]->(c:Category)
+WHERE b.review_count >= 50 AND b.stars >= 4.5
+RETURN p LIMIT 50
+```
+
+-----------------------------------------------------------------------------
+VISUAL 4.3: City Variety
+-----------------------------------------------------------------------------
+```cypher
+MATCH p=(u:User)-[:WROTE]->(r:Review)-[:REVIEWS]->(b:Business)
+WITH u, count(DISTINCT b.city) AS city_count
+ORDER BY city_count DESC LIMIT 2
+MATCH path=(u)-[:WROTE]->(:Review)-[:REVIEWS]->(b2:Business)
+RETURN path LIMIT 50
+```
+
+-----------------------------------------------------------------------------
+VISUAL 4.4: Category Engagement
+-----------------------------------------------------------------------------
+```cypher
+MATCH p=(u:User)-[:WROTE]->(r:Review)-[:REVIEWS]->(b:Business)-[:IN_CATEGORY]->(c:Category {name: "Mexican"})
+WITH u, count(DISTINCT b) AS reviewed_biz_count
+ORDER BY reviewed_biz_count DESC LIMIT 3
+MATCH path=(u)-[:WROTE]->(:Review)-[:REVIEWS]->(:Business)-[:IN_CATEGORY]->(:Category {name: "Mexican"})
+RETURN path LIMIT 100
+```
+
+-----------------------------------------------------------------------------
+VISUAL 4.5: MongoDB Comparison - Review Category Trace
+-----------------------------------------------------------------------------
+```cypher
+MATCH p=(r:Review)-[:REVIEWS]->(b:Business)-[:IN_CATEGORY]->(c:Category)
+WHERE substring(r.date, 0, 4) = "2018" AND b.stars >= 4.0
+RETURN p LIMIT 50
+```
+=============================================================================

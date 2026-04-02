@@ -1,0 +1,1119 @@
+=============================================================================
+NEO4J / CYPHER QUERIES AND OUTPUTS
+DSM Assignment 2 - Task 4
+=============================================================================
+
+-----------------------------------------------------------------------------
+QUERY 4.1: Top 10 Users with the Highest Friends
+-----------------------------------------------------------------------------
+```cypher
+MATCH (u:User)-[:FRIENDS_WITH]-(f:User)
+            WITH u, count(f) AS friend_count
+            ORDER BY friend_count DESC
+            LIMIT 10
+            RETURN u.name AS User, friend_count AS FriendCount, u.review_count AS TotalReviews, u.average_stars AS MeanRating
+```
+>>> TABULAR OUTPUT:
+[
+  {
+    "User": "Niki",
+    "FriendCount": 5459,
+    "TotalReviews": 1512,
+    "MeanRating": 4.59
+  },
+  {
+    "User": "Brittany",
+    "FriendCount": 3746,
+    "TotalReviews": 2492,
+    "MeanRating": 4.33
+  },
+  {
+    "User": "Chad",
+    "FriendCount": 1574,
+    "TotalReviews": 874,
+    "MeanRating": 3.7
+  },
+  {
+    "User": "Jon",
+    "FriendCount": 861,
+    "TotalReviews": 892,
+    "MeanRating": 4.14
+  },
+  {
+    "User": "Emily",
+    "FriendCount": 831,
+    "TotalReviews": 1074,
+    "MeanRating": 4.4
+  },
+  {
+    "User": "Richard",
+    "FriendCount": 815,
+    "TotalReviews": 1247,
+    "MeanRating": 3.95
+  },
+  {
+    "User": "Chris",
+    "FriendCount": 773,
+    "TotalReviews": 370,
+    "MeanRating": 3.88
+  },
+  {
+    "User": "Victor",
+    "FriendCount": 756,
+    "TotalReviews": 127,
+    "MeanRating": 4.83
+  },
+  {
+    "User": "Nicole",
+    "FriendCount": 694,
+    "TotalReviews": 1520,
+    "MeanRating": 4.18
+  },
+  {
+    "User": "Tyler",
+    "FriendCount": 653,
+    "TotalReviews": 633,
+    "MeanRating": 4.41
+  }
+]
+
+-----------------------------------------------------------------------------
+QUERY 4.2: Top 3 Businesses by Average Star Rating per State
+-----------------------------------------------------------------------------
+```cypher
+MATCH (b:Business)-[:IN_CATEGORY]->(c:Category)
+            WHERE b.review_count >= 50
+            WITH b.state AS state, b, collect(c.name) AS categories
+            ORDER BY b.stars DESC
+            WITH state, collect({name: b.name, city: b.city, categories: categories, rating: b.stars})[0..3] AS top_businesses
+            UNWIND top_businesses AS biz
+            RETURN state AS State, biz.name AS Name, biz.city AS City, biz.categories AS Categories, biz.rating AS Rating
+            ORDER BY State ASC
+```
+>>> TABULAR OUTPUT:
+[
+  {
+    "State": "IN",
+    "Name": "David Electric Service",
+    "City": "Indianapolis",
+    "Categories": [
+      "Contractors",
+      "Home Services",
+      "TV Mounting",
+      "Electricians",
+      "Lighting Fixtures & Equipment",
+      "Local Services",
+      "Home Network Installation",
+      "Generator Installation/Repair"
+    ],
+    "Rating": 5.0
+  },
+  {
+    "State": "IN",
+    "Name": "Indy Massage Company",
+    "City": "Indianapolis",
+    "Categories": [
+      "Waxing",
+      "Massage",
+      "Health & Medical",
+      "Massage Therapy",
+      "Skin Care",
+      "Beauty & Spas",
+      "Hair Removal"
+    ],
+    "Rating": 5.0
+  },
+  {
+    "State": "IN",
+    "Name": "Che Chori Foods",
+    "City": "Indianapolis",
+    "Categories": [
+      "Burgers",
+      "Pizza",
+      "Restaurants",
+      "Argentine",
+      "Empanadas",
+      "Food"
+    ],
+    "Rating": 5.0
+  }
+]
+
+-----------------------------------------------------------------------------
+QUERY 4.3: Top 10 Users Reviewing Across the Most Distinct Cities
+-----------------------------------------------------------------------------
+```cypher
+MATCH (u:User)-[:WROTE]->(r:Review)-[:REVIEWS]->(b:Business)
+            WITH u, b.city AS city, avg(r.stars) AS city_avg
+            WITH u, count(city) AS city_count, collect({city: city, avg_rating: city_avg}) AS RatingsPerCity
+            ORDER BY city_count DESC
+            LIMIT 10
+            RETURN u.name AS User, city_count AS DistinctCities, RatingsPerCity
+```
+>>> TABULAR OUTPUT:
+[
+  {
+    "User": "Ken",
+    "DistinctCities": 24,
+    "RatingsPerCity": [
+      {
+        "city": "Indianapolis",
+        "avg_rating": 4.233485193621869
+      },
+      {
+        "city": "Plainfield",
+        "avg_rating": 4.137254901960785
+      },
+      {
+        "city": "Carmel",
+        "avg_rating": 4.206896551724138
+      },
+      {
+        "city": "Greenwood",
+        "avg_rating": 4.120370370370369
+      },
+      {
+        "city": "Avon",
+        "avg_rating": 4.205128205128205
+      },
+      {
+        "city": "Fishers",
+        "avg_rating": 4.30357142857143
+      },
+      {
+        "city": "Mooresville",
+        "avg_rating": 4.020408163265305
+      },
+      {
+        "city": "Zionsville",
+        "avg_rating": 4.272727272727273
+      },
+      {
+        "city": "Brownsburg",
+        "avg_rating": 4.04
+      },
+      {
+        "city": "Camby",
+        "avg_rating": 4.4
+      },
+      {
+        "city": "Speedway",
+        "avg_rating": 4.166666666666666
+      },
+      {
+        "city": "Whitestown",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "Indianapolis ",
+        "avg_rating": 5.0
+      },
+      {
+        "city": "Beech Grove",
+        "avg_rating": 4.166666666666667
+      },
+      {
+        "city": "New Whiteland",
+        "avg_rating": 5.0
+      },
+      {
+        "city": "Pleasant Township",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "McCordsville",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "Danville",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "Noblesville",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "Martinsville",
+        "avg_rating": 3.5
+      },
+      {
+        "city": "Mccordsville",
+        "avg_rating": 5.0
+      },
+      {
+        "city": "Bargersville",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "Greenfield",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "Whiteland",
+        "avg_rating": 5.0
+      }
+    ]
+  },
+  {
+    "User": "Nicole",
+    "DistinctCities": 21,
+    "RatingsPerCity": [
+      {
+        "city": "Indianapolis",
+        "avg_rating": 4.167816091954024
+      },
+      {
+        "city": "Fishers",
+        "avg_rating": 4.38888888888889
+      },
+      {
+        "city": "Plainfield",
+        "avg_rating": 4.0588235294117645
+      },
+      {
+        "city": "Carmel",
+        "avg_rating": 4.008333333333332
+      },
+      {
+        "city": "Greenwood",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "Mooresville",
+        "avg_rating": 3.9999999999999996
+      },
+      {
+        "city": "Zionsville",
+        "avg_rating": 4.599999999999999
+      },
+      {
+        "city": "Brownsburg",
+        "avg_rating": 5.0
+      },
+      {
+        "city": "Noblesville",
+        "avg_rating": 5.0
+      },
+      {
+        "city": "Avon",
+        "avg_rating": 4.142857142857143
+      },
+      {
+        "city": "Whitestown",
+        "avg_rating": 5.0
+      },
+      {
+        "city": "Indianapolis ",
+        "avg_rating": 3.0
+      },
+      {
+        "city": "Beech Grove",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "New Palestine",
+        "avg_rating": 5.0
+      },
+      {
+        "city": "Speedway",
+        "avg_rating": 5.0
+      },
+      {
+        "city": "Greenfield",
+        "avg_rating": 3.0
+      },
+      {
+        "city": "Camby",
+        "avg_rating": 3.0
+      },
+      {
+        "city": "Whiteland",
+        "avg_rating": 5.0
+      },
+      {
+        "city": "Castleton",
+        "avg_rating": 3.5
+      },
+      {
+        "city": "Bargersville",
+        "avg_rating": 5.0
+      },
+      {
+        "city": "Danville",
+        "avg_rating": 5.0
+      }
+    ]
+  },
+  {
+    "User": "Brittany",
+    "DistinctCities": 18,
+    "RatingsPerCity": [
+      {
+        "city": "Indianapolis",
+        "avg_rating": 4.368165249088704
+      },
+      {
+        "city": "Carmel",
+        "avg_rating": 4.3392857142857135
+      },
+      {
+        "city": "Fishers",
+        "avg_rating": 4.473684210526316
+      },
+      {
+        "city": "Greenwood",
+        "avg_rating": 4.666666666666666
+      },
+      {
+        "city": "Zionsville",
+        "avg_rating": 4.666666666666666
+      },
+      {
+        "city": "Castleton",
+        "avg_rating": 3.0
+      },
+      {
+        "city": "Mooresville",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "Lebanon",
+        "avg_rating": 5.0
+      },
+      {
+        "city": "Brownsburg",
+        "avg_rating": 5.0
+      },
+      {
+        "city": "Downtown Indianapolis",
+        "avg_rating": 5.0
+      },
+      {
+        "city": "McCordsville",
+        "avg_rating": 5.0
+      },
+      {
+        "city": "Noblesville",
+        "avg_rating": 5.0
+      },
+      {
+        "city": "Danville",
+        "avg_rating": 4.5
+      },
+      {
+        "city": "Speedway",
+        "avg_rating": 3.6666666666666665
+      },
+      {
+        "city": "Avon",
+        "avg_rating": 5.0
+      },
+      {
+        "city": "Fairland",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "Plainfield",
+        "avg_rating": 5.0
+      },
+      {
+        "city": "Southport",
+        "avg_rating": 3.0
+      }
+    ]
+  },
+  {
+    "User": "Rick",
+    "DistinctCities": 18,
+    "RatingsPerCity": [
+      {
+        "city": "Carmel",
+        "avg_rating": 3.4637681159420284
+      },
+      {
+        "city": "Indianapolis",
+        "avg_rating": 3.541176470588235
+      },
+      {
+        "city": "Fishers",
+        "avg_rating": 3.3684210526315788
+      },
+      {
+        "city": "Brownsburg",
+        "avg_rating": 3.0
+      },
+      {
+        "city": "Plainfield",
+        "avg_rating": 2.857142857142857
+      },
+      {
+        "city": "Speedway",
+        "avg_rating": 4.5
+      },
+      {
+        "city": "Avon",
+        "avg_rating": 3.0
+      },
+      {
+        "city": "New Palestine",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "Zionsville",
+        "avg_rating": 3.6
+      },
+      {
+        "city": "McCordsville",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "Greenwood",
+        "avg_rating": 3.2
+      },
+      {
+        "city": "Castleton",
+        "avg_rating": 5.0
+      },
+      {
+        "city": "Lawrence",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "Mooresville",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "Hancock",
+        "avg_rating": 3.0
+      },
+      {
+        "city": "Indiana",
+        "avg_rating": 3.0
+      },
+      {
+        "city": "Greenfield",
+        "avg_rating": 3.0
+      },
+      {
+        "city": "New Whiteland",
+        "avg_rating": 2.0
+      }
+    ]
+  },
+  {
+    "User": "Wanda",
+    "DistinctCities": 16,
+    "RatingsPerCity": [
+      {
+        "city": "Indianapolis",
+        "avg_rating": 4.077720207253885
+      },
+      {
+        "city": "Plainfield",
+        "avg_rating": 4.052631578947369
+      },
+      {
+        "city": "Avon",
+        "avg_rating": 4.148148148148149
+      },
+      {
+        "city": "Carmel",
+        "avg_rating": 4.3076923076923075
+      },
+      {
+        "city": "Speedway",
+        "avg_rating": 4.131147540983606
+      },
+      {
+        "city": "Brownsburg",
+        "avg_rating": 4.162790697674418
+      },
+      {
+        "city": "Zionsville",
+        "avg_rating": 4.3
+      },
+      {
+        "city": "Mooresville",
+        "avg_rating": 4.428571428571429
+      },
+      {
+        "city": "Greenwood",
+        "avg_rating": 4.238095238095237
+      },
+      {
+        "city": "Beech Grove",
+        "avg_rating": 4.5
+      },
+      {
+        "city": "Whitestown",
+        "avg_rating": 4.333333333333333
+      },
+      {
+        "city": "Clermont",
+        "avg_rating": 3.6666666666666665
+      },
+      {
+        "city": "Fishers",
+        "avg_rating": 4.5
+      },
+      {
+        "city": "Camby",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "INpolis",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "Danville",
+        "avg_rating": 4.0
+      }
+    ]
+  },
+  {
+    "User": "Karen",
+    "DistinctCities": 16,
+    "RatingsPerCity": [
+      {
+        "city": "Indianapolis",
+        "avg_rating": 4.044534412955466
+      },
+      {
+        "city": "Plainfield",
+        "avg_rating": 5.0
+      },
+      {
+        "city": "Speedway",
+        "avg_rating": 5.0
+      },
+      {
+        "city": "Avon",
+        "avg_rating": 2.0
+      },
+      {
+        "city": "Brownsburg",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "Beech Grove",
+        "avg_rating": 3.5
+      },
+      {
+        "city": "Carmel",
+        "avg_rating": 4.5
+      },
+      {
+        "city": "Fishers",
+        "avg_rating": 4.333333333333333
+      },
+      {
+        "city": "Whitestown",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "Greenwood",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "Cumberland",
+        "avg_rating": 5.0
+      },
+      {
+        "city": "Lawrence",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "New Palestine",
+        "avg_rating": 3.0
+      },
+      {
+        "city": "Greenfield",
+        "avg_rating": 5.0
+      },
+      {
+        "city": "Martinsville",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "McCordsville",
+        "avg_rating": 4.571428571428571
+      }
+    ]
+  },
+  {
+    "User": "Richard",
+    "DistinctCities": 15,
+    "RatingsPerCity": [
+      {
+        "city": "Indianapolis",
+        "avg_rating": 3.807395993836672
+      },
+      {
+        "city": "Fishers",
+        "avg_rating": 3.707317073170731
+      },
+      {
+        "city": "Avon",
+        "avg_rating": 5.0
+      },
+      {
+        "city": "Southport",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "Plainfield",
+        "avg_rating": 3.6
+      },
+      {
+        "city": "Carmel",
+        "avg_rating": 3.645161290322581
+      },
+      {
+        "city": "Beech Grove",
+        "avg_rating": 3.5
+      },
+      {
+        "city": "Greenwood",
+        "avg_rating": 3.727272727272727
+      },
+      {
+        "city": "Brownsburg",
+        "avg_rating": 2.0
+      },
+      {
+        "city": "McCordsville",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "Lawrence",
+        "avg_rating": 3.25
+      },
+      {
+        "city": "Speedway",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "Castleton",
+        "avg_rating": 3.0
+      },
+      {
+        "city": "Mccordsville",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "Indianapolis city (balance)",
+        "avg_rating": 5.0
+      }
+    ]
+  },
+  {
+    "User": "DeAnna",
+    "DistinctCities": 15,
+    "RatingsPerCity": [
+      {
+        "city": "Indianapolis",
+        "avg_rating": 3.553278688524591
+      },
+      {
+        "city": "Carmel",
+        "avg_rating": 3.441176470588236
+      },
+      {
+        "city": "Avon",
+        "avg_rating": 3.3333333333333326
+      },
+      {
+        "city": "Fishers",
+        "avg_rating": 4.333333333333333
+      },
+      {
+        "city": "Danville",
+        "avg_rating": 3.0
+      },
+      {
+        "city": "Mooresville",
+        "avg_rating": 3.8124999999999996
+      },
+      {
+        "city": "Speedway",
+        "avg_rating": 3.5
+      },
+      {
+        "city": "Zionsville",
+        "avg_rating": 3.7777777777777777
+      },
+      {
+        "city": "Greenwood",
+        "avg_rating": 3.2499999999999996
+      },
+      {
+        "city": "Beech Grove",
+        "avg_rating": 4.5
+      },
+      {
+        "city": "Camby",
+        "avg_rating": 2.8888888888888893
+      },
+      {
+        "city": "Plainfield",
+        "avg_rating": 3.5
+      },
+      {
+        "city": "Brownsburg",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "McCordsville",
+        "avg_rating": 5.0
+      },
+      {
+        "city": "Whitestown",
+        "avg_rating": 3.0
+      }
+    ]
+  },
+  {
+    "User": "Peter",
+    "DistinctCities": 14,
+    "RatingsPerCity": [
+      {
+        "city": "Indianapolis",
+        "avg_rating": 3.3780313837375218
+      },
+      {
+        "city": "Carmel",
+        "avg_rating": 3.402985074626865
+      },
+      {
+        "city": "Avon",
+        "avg_rating": 2.8421052631578947
+      },
+      {
+        "city": "Zionsville",
+        "avg_rating": 3.6470588235294117
+      },
+      {
+        "city": "Fishers",
+        "avg_rating": 3.7999999999999994
+      },
+      {
+        "city": "Greenwood",
+        "avg_rating": 2.8666666666666663
+      },
+      {
+        "city": "Mooresville",
+        "avg_rating": 3.3636363636363638
+      },
+      {
+        "city": "Speedway",
+        "avg_rating": 3.2
+      },
+      {
+        "city": "Beech Grove",
+        "avg_rating": 3.5
+      },
+      {
+        "city": "Whitestown",
+        "avg_rating": 3.6666666666666665
+      },
+      {
+        "city": "Plainfield",
+        "avg_rating": 2.7499999999999996
+      },
+      {
+        "city": "Camby",
+        "avg_rating": 2.25
+      },
+      {
+        "city": "Danville",
+        "avg_rating": 3.5
+      },
+      {
+        "city": "Brownsburg",
+        "avg_rating": 3.142857142857143
+      }
+    ]
+  },
+  {
+    "User": "Tracy",
+    "DistinctCities": 14,
+    "RatingsPerCity": [
+      {
+        "city": "Indianapolis",
+        "avg_rating": 3.975206611570249
+      },
+      {
+        "city": "Mooresville",
+        "avg_rating": 5.0
+      },
+      {
+        "city": "Speedway",
+        "avg_rating": 3.0
+      },
+      {
+        "city": "New Palestine",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "Greenwood",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "Plainfield",
+        "avg_rating": 4.333333333333333
+      },
+      {
+        "city": "Carmel",
+        "avg_rating": 4.222222222222222
+      },
+      {
+        "city": "Fishers",
+        "avg_rating": 4.5
+      },
+      {
+        "city": "Whitestown",
+        "avg_rating": 5.0
+      },
+      {
+        "city": "Wanamaker",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "McCordsville",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "Cumberland",
+        "avg_rating": 4.0
+      },
+      {
+        "city": "Martinsville",
+        "avg_rating": 3.0
+      },
+      {
+        "city": "Zionsville",
+        "avg_rating": 3.0
+      }
+    ]
+  }
+]
+
+-----------------------------------------------------------------------------
+QUERY 4.4: Category Mean vs Overall Mean (for 'Mexican' Category)
+-----------------------------------------------------------------------------
+```cypher
+MATCH (u:User)-[:WROTE]->(r:Review)-[:REVIEWS]->(b:Business)-[:IN_CATEGORY]->(c:Category {name: "Mexican"})
+            WITH u, count(DISTINCT b) AS reviewed_biz_count, avg(r.stars) AS category_avg
+            WHERE reviewed_biz_count >= 5
+            RETURN u.name AS User, reviewed_biz_count AS BizCount, category_avg AS CategoryRating, u.average_stars AS OverallRating
+            ORDER BY reviewed_biz_count DESC
+            LIMIT 10
+```
+>>> TABULAR OUTPUT:
+[
+  {
+    "User": "Peter",
+    "BizCount": 86,
+    "CategoryRating": 3.282608695652174,
+    "OverallRating": 3.47
+  },
+  {
+    "User": "Ken",
+    "BizCount": 81,
+    "CategoryRating": 4.070588235294117,
+    "OverallRating": 4.02
+  },
+  {
+    "User": "DeAnna",
+    "BizCount": 66,
+    "CategoryRating": 3.2318840579710155,
+    "OverallRating": 3.68
+  },
+  {
+    "User": "Wanda",
+    "BizCount": 65,
+    "CategoryRating": 4.090909090909091,
+    "OverallRating": 4.17
+  },
+  {
+    "User": "Brittany",
+    "BizCount": 49,
+    "CategoryRating": 4.327586206896552,
+    "OverallRating": 4.33
+  },
+  {
+    "User": "Nicole",
+    "BizCount": 45,
+    "CategoryRating": 3.8333333333333326,
+    "OverallRating": 4.18
+  },
+  {
+    "User": "Niki",
+    "BizCount": 44,
+    "CategoryRating": 4.541666666666667,
+    "OverallRating": 4.59
+  },
+  {
+    "User": "Allison",
+    "BizCount": 43,
+    "CategoryRating": 4.062499999999999,
+    "OverallRating": 4.3
+  },
+  {
+    "User": "Bridget",
+    "BizCount": 43,
+    "CategoryRating": 3.909090909090909,
+    "OverallRating": 3.94
+  },
+  {
+    "User": "Sarah",
+    "BizCount": 38,
+    "CategoryRating": 4.660000000000001,
+    "OverallRating": 4.68
+  }
+]
+
+-----------------------------------------------------------------------------
+QUERY 4.5: MongoDB Comparison - Cypher Implementation of Trend Analysis (Query 3.2)
+-----------------------------------------------------------------------------
+```cypher
+MATCH (r:Review)-[:REVIEWS]->(b:Business)-[:IN_CATEGORY]->(c:Category)
+            WITH c.name AS Category, substring(r.date, 0, 4) AS Year, r.stars AS Stars
+            WITH Category, Year, avg(Stars) AS AvgStarsYear, count(*) AS ReviewCount
+            WHERE ReviewCount >= 500
+            RETURN Category, Year, AvgStarsYear, ReviewCount
+            ORDER BY Category ASC, Year ASC
+            LIMIT 20
+```
+>>> TABULAR OUTPUT:
+[
+  {
+    "Category": "Active Life",
+    "Year": "2013",
+    "AvgStarsYear": 3.9603825136612048,
+    "ReviewCount": 732
+  },
+  {
+    "Category": "Active Life",
+    "Year": "2014",
+    "AvgStarsYear": 3.937179487179489,
+    "ReviewCount": 780
+  },
+  {
+    "Category": "Active Life",
+    "Year": "2015",
+    "AvgStarsYear": 3.957279860505665,
+    "ReviewCount": 1147
+  },
+  {
+    "Category": "Active Life",
+    "Year": "2016",
+    "AvgStarsYear": 3.9913678618857893,
+    "ReviewCount": 1506
+  },
+  {
+    "Category": "Active Life",
+    "Year": "2017",
+    "AvgStarsYear": 4.073917634635695,
+    "ReviewCount": 1894
+  },
+  {
+    "Category": "Active Life",
+    "Year": "2018",
+    "AvgStarsYear": 4.105072463768119,
+    "ReviewCount": 2208
+  },
+  {
+    "Category": "Active Life",
+    "Year": "2019",
+    "AvgStarsYear": 4.094732182381592,
+    "ReviewCount": 2259
+  },
+  {
+    "Category": "Active Life",
+    "Year": "2020",
+    "AvgStarsYear": 4.0730290456431515,
+    "ReviewCount": 1205
+  },
+  {
+    "Category": "Active Life",
+    "Year": "2021",
+    "AvgStarsYear": 4.06743295019157,
+    "ReviewCount": 1305
+  },
+  {
+    "Category": "American (New)",
+    "Year": "2010",
+    "AvgStarsYear": 3.7673913043478287,
+    "ReviewCount": 920
+  },
+  {
+    "Category": "American (New)",
+    "Year": "2011",
+    "AvgStarsYear": 3.676280457483843,
+    "ReviewCount": 2011
+  },
+  {
+    "Category": "American (New)",
+    "Year": "2012",
+    "AvgStarsYear": 3.6465059256232117,
+    "ReviewCount": 2447
+  },
+  {
+    "Category": "American (New)",
+    "Year": "2013",
+    "AvgStarsYear": 3.645566090351368,
+    "ReviewCount": 3586
+  },
+  {
+    "Category": "American (New)",
+    "Year": "2014",
+    "AvgStarsYear": 3.770349424358715,
+    "ReviewCount": 4951
+  },
+  {
+    "Category": "American (New)",
+    "Year": "2015",
+    "AvgStarsYear": 3.8143605620385816,
+    "ReviewCount": 8398
+  },
+  {
+    "Category": "American (New)",
+    "Year": "2016",
+    "AvgStarsYear": 3.8586486186619338,
+    "ReviewCount": 9013
+  },
+  {
+    "Category": "American (New)",
+    "Year": "2017",
+    "AvgStarsYear": 3.8536804308797175,
+    "ReviewCount": 10026
+  },
+  {
+    "Category": "American (New)",
+    "Year": "2018",
+    "AvgStarsYear": 3.906322317874645,
+    "ReviewCount": 10803
+  },
+  {
+    "Category": "American (New)",
+    "Year": "2019",
+    "AvgStarsYear": 3.909644670050758,
+    "ReviewCount": 9850
+  },
+  {
+    "Category": "American (New)",
+    "Year": "2020",
+    "AvgStarsYear": 4.045595213534143,
+    "ReviewCount": 4847
+  }
+]
+
+[COMPLEXITY COMPARISON REPORT]
+Expressiveness: The Cypher query is infinitely more elegant and concise than the MongoDB pipeline.
+In MongoDB (Task 3.2), executing Trend Analysis required linking the Review to the Business, and ultimately 
+iterating over the Category array elements. This required an awkward `$lookup` operation followed by two 
+heavy `$unwind` stages just to manipulate the array structure, severely bloating the core analytical logic.
+In contrast, Cypher's visual ASCII art syntax `MATCH (r:Review)-[:REVIEWS]->(b:Business)-[:IN_CATEGORY]->(c:Category)` 
+traverses the data naturally without explicitly mutating arrays. The index-free adjacency allows Neo4j to hop across these nodes instantly without computing massive Cartesian-product document joins, proving exactly why Property Graphs fundamentally dominate Many-to-Many data models over strictly-nested Document schemas.
+=============================================================================
